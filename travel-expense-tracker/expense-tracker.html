@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Expense Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+    header h1 { font-size: 2rem; margin-bottom: 10px; }
+    header p { opacity: 0.9; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+    }
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+    .traveler-btn {
+      padding: 8px 16px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .traveler-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    .currency-btn {
+      padding: 10px 20px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .currency-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      font-weight: 600;
+      color: #555;
+      background: #f8f9fa;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .badge-hkd { background: #e3f2fd; color: #1976d2; }
+    .badge-jpy { background: #fce4ec; color: #c2185b; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .hidden { display: none; }
+    .balance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .balance-card {
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .balance-card h3 {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .balance-card .amount {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .positive { background: #e8f5e9; color: #2e7d32; }
+    .negative { background: #ffebee; color: #c62828; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✈️ Travel Expense Tracker</h1>
+      <p>Track your Japan trip spending in HKD and JPY</p>
+    </header>
+
+    <div id="message"></div>
+
+    <div id="loading" class="loading">
+      <p>Loading expenses...</p>
+    </div>
+
+    <div id="app" class="hidden">
+      <!-- Balance Cards -->
+      <div class="card">
+        <h2>Balance Overview</h2>
+        <div id="balances" class="balance-grid"></div>
+      </div>
+
+      <!-- Add Expense Form -->
+      <div class="card">
+        <h2 id="form-title">Add New Expense</h2>
+        <form id="expense-form">
+          <input type="hidden" id="expense-id">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="category">
+                <option>Food & Dining</option>
+                <option>Transport</option>
+                <option>Accommodation</option>
+                <option>Shopping</option>
+                <option>Entertainment</option>
+                <option>Sightseeing</option>
+                <option>Others</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" id="description" placeholder="e.g., Sushi dinner in Shibuya" required>
+          </div>
+
+          <div class="form-group">
+            <label>Paid By</label>
+            <div class="btn-group" id="paid-by-group">
+              <button type="button" class="traveler-btn active" data-value="Stanley">Stanley</button>
+              <button type="button" class="traveler-btn" data-value="Ash">Ash</button>
+              <button type="button" class="traveler-btn" data-value="Kia">Kia</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Split Among</label>
+            <div class="btn-group" id="split-group">
+              <button type="button" class="traveler-btn active" data-value="Stanley">Stanley</button>
+              <button type="button" class="traveler-btn active" data-value="Ash">Ash</button>
+              <button type="button" class="traveler-btn active" data-value="Kia">Kia</button>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Currency</label>
+              <div class="btn-group">
+                <button type="button" class="currency-btn active" data-value="HKD">HK$ HKD</button>
+                <button type="button" class="currency-btn" data-value="JPY">¥ JPY</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Amount</label>
+              <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">Add Expense</button>
+            <button type="button" class="btn btn-secondary hidden" id="cancel-btn">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Expense List -->
+      <div class="card">
+        <h2>Expense Records</h2>
+        <table id="expense-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Paid By</th>
+              <th>Currency</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="expense-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby3_YaQbj1AD6d39z83t9E0MftYUP5P_FqFo2ERFBWo_ZN8jBWUHpB__QUklb6IIl_z/exec';
+    const TRAVELERS = ['Stanley', 'Ash', 'Kia'];
+    
+    // State
+    let expenses = [];
+    let editingId = null;
+    let selectedPaidBy = 'Stanley';
+    let selectedSplit = ['Stanley', 'Ash', 'Kia'];
+    let selectedCurrency = 'HKD';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      setupEventListeners();
+      loadExpenses();
+    });
+
+    function setupEventListeners() {
+      // Paid By buttons
+      document.querySelectorAll('#paid-by-group .traveler-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#paid-by-group .traveler-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedPaidBy = btn.dataset.value;
+        });
+      });
+
+      // Split Among buttons
+      document.querySelectorAll('#split-group .traveler-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+          selectedSplit = Array.from(document.querySelectorAll('#split-group .traveler-btn.active'))
+            .map(b => b.dataset.value);
+          if (selectedSplit.length === 0) {
+            btn.classList.add('active');
+            selectedSplit = [btn.dataset.value];
+          }
+        });
+      });
+
+      // Currency buttons
+      document.querySelectorAll('.currency-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedCurrency = btn.dataset.value;
+          document.getElementById('amount').step = selectedCurrency === 'HKD' ? '0.01' : '1';
+        });
+      });
+
+      // Form submit
+      document.getElementById('expense-form').addEventListener('submit', handleSubmit);
+      
+      // Cancel button
+      document.getElementById('cancel-btn').addEventListener('click', resetForm);
+    }
+
+    async function loadExpenses() {
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=get`);
+        const result = await response.json();
+        
+        if (result.result === 'success' || result.success) {
+          expenses = result.data || [];
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('app').classList.remove('hidden');
+          renderExpenses();
+          renderBalances();
+        } else {
+          showError('Failed to load expenses: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        showError('Error loading expenses: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      
+      const expense = {
+        id: editingId || '',
+        date: document.getElementById('date').value,
+        description: document.getElementById('description').value,
+        category: document.getElementById('category').value,
+        paidBy: selectedPaidBy,
+        splitAmong: selectedSplit,
+        currency: selectedCurrency,
+        amount: parseFloat(document.getElementById('amount').value)
+      };
+
+      try {
+        const action = editingId ? 'update' : 'add';
+        
+        // Use FormData instead of JSON to avoid CORS preflight
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('id', expense.id);
+        formData.append('date', expense.date);
+        formData.append('description', expense.description);
+        formData.append('category', expense.category);
+        formData.append('paidBy', expense.paidBy);
+        formData.append('splitAmong', expense.splitAmong.join(', '));
+        formData.append('currency', expense.currency);
+        formData.append('amount', expense.amount);
+        
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.result === 'success' || result.success) {
+          showSuccess(editingId ? 'Expense updated!' : 'Expense added!');
+          resetForm();
+          await loadExpenses();
+        } else {
+          showError('Failed to save: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        showError('Error saving expense: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    async function deleteExpense(id) {
+      if (!confirm('Are you sure you want to delete this expense?')) return;
+      
+      try {
+        // Use FormData instead of JSON to avoid CORS preflight
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+        
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.result === 'success' || result.success) {
+          showSuccess('Expense deleted!');
+          await loadExpenses();
+        } else {
+          showError('Failed to delete: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        showError('Error deleting expense: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    function editExpense(id) {
+      const expense = expenses.find(e => e.id === id);
+      if (!expense) return;
+      
+      editingId = id;
+      document.getElementById('expense-id').value = id;
+      document.getElementById('date').value = expense.date;
+      document.getElementById('description').value = expense.description;
+      document.getElementById('category').value = expense.category;
+      document.getElementById('amount').value = expense.amount;
+      
+      // Set Paid By
+      selectedPaidBy = expense.paidBy;
+      document.querySelectorAll('#paid-by-group .traveler-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === expense.paidBy);
+      });
+      
+      // Set Split Among
+      selectedSplit = expense.splitAmong;
+      document.querySelectorAll('#split-group .traveler-btn').forEach(btn => {
+        btn.classList.toggle('active', expense.splitAmong.includes(btn.dataset.value));
+      });
+      
+      // Set Currency
+      selectedCurrency = expense.currency;
+      document.querySelectorAll('.currency-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === expense.currency);
+      });
+      
+      document.getElementById('form-title').textContent = 'Edit Expense';
+      document.getElementById('submit-btn').textContent = 'Update Expense';
+      document.getElementById('cancel-btn').classList.remove('hidden');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById('expense-form').reset();
+      document.getElementById('expense-id').value = '';
+      
+      selectedPaidBy = 'Stanley';
+      selectedSplit = ['Stanley', 'Ash', 'Kia'];
+      selectedCurrency = 'HKD';
+      
+      document.querySelectorAll('#paid-by-group .traveler-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === 0);
+      });
+      
+      document.querySelectorAll('#split-group .traveler-btn').forEach(btn => {
+        btn.classList.add('active');
+      });
+      
+      document.querySelectorAll('.currency-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === 0);
+      });
+      
+      document.getElementById('form-title').textContent = 'Add New Expense';
+      document.getElementById('submit-btn').textContent = 'Add Expense';
+      document.getElementById('cancel-btn').classList.add('hidden');
+    }
+
+    function renderExpenses() {
+      const tbody = document.getElementById('expense-list');
+      tbody.innerHTML = expenses.map(exp => `
+        <tr>
+          <td>${exp.date}</td>
+          <td>${exp.description}</td>
+          <td>${exp.paidBy}</td>
+          <td><span class="badge badge-${exp.currency.toLowerCase()}">${exp.currency}</span></td>
+          <td>${formatCurrency(exp.amount, exp.currency)}</td>
+          <td>
+            <button class="btn btn-success" onclick="editExpense('${exp.id}')" style="padding: 5px 10px; font-size: 0.85rem;">Edit</button>
+            <button class="btn btn-danger" onclick="deleteExpense('${exp.id}')" style="padding: 5px 10px; font-size: 0.85rem;">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderBalances() {
+      const balances = calculateBalances();
+      const container = document.getElementById('balances');
+      
+      let html = '';
+      ['HKD', 'JPY'].forEach(currency => {
+        TRAVELERS.forEach(person => {
+          const balance = balances[currency][person];
+          const isPositive = balance > 0;
+          html += `
+            <div class="balance-card ${isPositive ? 'positive' : balance < 0 ? 'negative' : ''}">
+              <h3>${person} (${currency})</h3>
+              <div class="amount">${formatCurrency(balance, currency)}</div>
+              <small>${isPositive ? 'is owed' : balance < 0 ? 'owes' : 'settled'}</small>
+            </div>
+          `;
+        });
+      });
+      
+      container.innerHTML = html;
+    }
+
+    function calculateBalances() {
+      const balances = {
+        HKD: { Stanley: 0, Ash: 0, Kia: 0 },
+        JPY: { Stanley: 0, Ash: 0, Kia: 0 }
+      };
+      
+      expenses.forEach(exp => {
+        const share = exp.amount / exp.splitAmong.length;
+        balances[exp.currency][exp.paidBy] += exp.amount;
+        exp.splitAmong.forEach(person => {
+          balances[exp.currency][person] -= share;
+        });
+      });
+      
+      return balances;
+    }
+
+    function formatCurrency(amount, currency) {
+      if (currency === 'HKD') {
+        return 'HK$ ' + amount.toFixed(2);
+      }
+      return '¥ ' + Math.round(amount).toLocaleString();
+    }
+
+    function showError(message) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerHTML = `<div class="error">${message}</div>`;
+      setTimeout(() => msgDiv.innerHTML = '', 5000);
+    }
+
+    function showSuccess(message) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerHTML = `<div class="success">${message}</div>`;
+      setTimeout(() => msgDiv.innerHTML = '', 3000);
+    }
+  </script>
+</body>
+</html>

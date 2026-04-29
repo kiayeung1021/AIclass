@@ -1,0 +1,37 @@
+[
+  {
+    "date": "2026-04-02",
+    "description": "Breakfast",
+    "currency": "HKD",
+    "amount": 100.0,
+    "paid_by": "Stanley",
+    "split_among": [
+      "Stanley",
+      "Ash",
+      "Kia"
+    ]
+  },
+  {
+    "date": "2026-04-02",
+    "description": "taxi",
+    "currency": "JPY",
+    "amount": 2000.0,
+    "paid_by": "Stanley",
+    "split_among": [
+      "Stanley",
+      "Ash",
+      "Kia"
+    ]
+  },
+  {
+    "date": "2026-04-03",
+    "description": "Lunch",
+    "currency": "JPY",
+    "amount": 20000.0,
+    "paid_by": "Ash",
+    "split_among": [
+      "Stanley",
+      "Ash"
+    ]
+  }
+]

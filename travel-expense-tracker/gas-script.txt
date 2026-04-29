@@ -1,0 +1,172 @@
+const SHEET_NAME = 'Expenses';
+const HEADERS = ['ID', 'Date', 'Description', 'Category', 'Paid By', 'Split Among', 'Currency', 'Amount'];
+
+// Main entry point for all requests
+function doGet(e) {
+  return handleRequest(e);
+}
+
+function doPost(e) {
+  return handleRequest(e);
+}
+
+function doOptions(e) {
+  // Handle preflight CORS requests
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+}
+
+function handleRequest(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  
+  let result;
+  
+  try {
+    // Determine if it's GET or POST
+    const isPost = e.postData !== undefined;
+    
+    if (isPost) {
+      // POST request
+      const data = JSON.parse(e.postData.contents);
+      const action = data.action;
+      
+      if (action === 'add') {
+        const id = addExpense(data.expense);
+        result = { result: 'success', id: id };
+      } else if (action === 'update') {
+        updateExpense(data.expense);
+        result = { result: 'success' };
+      } else if (action === 'delete') {
+        deleteExpense(data.id);
+        result = { result: 'success' };
+      } else {
+        result = { result: 'error', error: 'Unknown action: ' + action };
+      }
+    } else {
+      // GET request
+      const action = e.parameter.action || 'get';
+      
+      if (action === 'get') {
+        result = { result: 'success', data: getExpenses() };
+      } else {
+        result = { result: 'error', error: 'Unknown action: ' + action };
+      }
+    }
+    
+  } catch (err) {
+    console.error('Error:', err);
+    result = { result: 'error', error: err.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+  
+  // Return JSON response with CORS headers
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+}
+
+function getSheet() {
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = doc.getSheetByName(SHEET_NAME);
+  
+  if (!sheet) {
+    sheet = doc.insertSheet(SHEET_NAME);
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+  }
+  
+  return sheet;
+}
+
+function getExpenses() {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const expenses = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    
+    expenses.push({
+      id: row[0].toString(),
+      date: row[1] || '',
+      description: row[2] || '',
+      category: row[3] || '',
+      paidBy: row[4] || '',
+      splitAmong: row[5] ? row[5].toString().split(',').map(s => s.trim()) : [],
+      currency: row[6] || 'HKD',
+      amount: parseFloat(row[7]) || 0
+    });
+  }
+  
+  return expenses;
+}
+
+function addExpense(expense) {
+  const sheet = getSheet();
+  const id = Utilities.getUuid();
+  
+  const newRow = [
+    id,
+    expense.date,
+    expense.description,
+    expense.category,
+    expense.paidBy,
+    Array.isArray(expense.splitAmong) ? expense.splitAmong.join(', ') : expense.splitAmong,
+    expense.currency,
+    expense.amount
+  ];
+  
+  const nextRow = sheet.getLastRow() + 1;
+  sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
+  
+  return id;
+}
+
+function updateExpense(expense) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString() === expense.id.toString()) {
+      const newRow = [
+        expense.date,
+        expense.description,
+        expense.category,
+        expense.paidBy,
+        Array.isArray(expense.splitAmong) ? expense.splitAmong.join(', ') : expense.splitAmong,
+        expense.currency,
+        expense.amount
+      ];
+      sheet.getRange(i + 1, 2, 1, newRow.length).setValues([newRow]);
+      return;
+    }
+  }
+  
+  throw new Error('Expense not found');
+}
+
+function deleteExpense(id) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString() === id.toString()) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+  
+  throw new Error('Expense not found');
+}

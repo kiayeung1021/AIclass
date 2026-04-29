@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Ocean blue travel theme */
+    --background: 210 30% 98%;
+    --foreground: 215 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 12%;
+
+    /* Deep ocean blue primary */
+    --primary: 215 80% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 215 85% 62%;
+
+    --secondary: 210 25% 95%;
+    --secondary-foreground: 215 25% 20%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 15% 50%;
+
+    --accent: 210 30% 92%;
+    --accent-foreground: 215 25% 15%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 92% 15%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 215 80% 48%;
+    --radius: 0.625rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 80% 48%), hsl(215 85% 62%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 80% 48%), hsl(200 75% 50%), hsl(185 70% 45%));
+    --gradient-card-hkd: linear-gradient(135deg, hsl(215 80% 48%), hsl(225 75% 55%));
+    --gradient-card-jpy: linear-gradient(135deg, hsl(0 72% 55%), hsl(350 65% 50%));
+    --gradient-card-total: linear-gradient(135deg, hsl(152 60% 38%), hsl(165 55% 42%));
+    --gradient-subtle: linear-gradient(180deg, hsl(210 30% 98%), hsl(210 25% 96%));
+
+    /* Shadows */
+    --shadow-elegant: 0 4px 24px -4px hsl(215 80% 48% / 0.15);
+    --shadow-glow: 0 0 32px hsl(215 85% 62% / 0.2);
+    --shadow-card-hover: 0 8px 32px -8px hsl(215 80% 48% / 0.2);
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  .gradient-card-hkd {
+    background: var(--gradient-card-hkd);
+  }
+  .gradient-card-jpy {
+    background: var(--gradient-card-jpy);
+  }
+  .gradient-card-total {
+    background: var(--gradient-card-total);
+  }
+  .gradient-subtle {
+    background: var(--gradient-subtle);
+  }
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+}

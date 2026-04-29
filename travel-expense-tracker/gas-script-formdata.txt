@@ -1,0 +1,153 @@
+const SHEET_NAME = 'Expenses';
+const HEADERS = ['ID', 'Date', 'Description', 'Category', 'Paid By', 'Split Among', 'Currency', 'Amount'];
+
+function doGet(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  
+  try {
+    const expenses = getExpenses();
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: 'success', data: expenses }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: 'error', error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    console.log('Received parameters:', e.parameter);
+    console.log('Parameter keys:', Object.keys(e.parameter));
+    
+    const action = e.parameter.action;
+    let result;
+
+    if (action === 'add') {
+      const id = addExpense(e.parameter);
+      result = { result: 'success', id: id };
+    } else if (action === 'update') {
+      updateExpense(e.parameter);
+      result = { result: 'success' };
+    } else if (action === 'delete') {
+      deleteExpense(e.parameter.id);
+      result = { result: 'success' };
+    } else {
+      result = { result: 'error', error: 'Unknown action: ' + action };
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    console.error('Error:', err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: 'error', error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getSheet() {
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = doc.getSheetByName(SHEET_NAME);
+  
+  if (!sheet) {
+    sheet = doc.insertSheet(SHEET_NAME);
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+  }
+  
+  return sheet;
+}
+
+function getExpenses() {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const expenses = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    
+    expenses.push({
+      id: row[0].toString(),
+      date: row[1] || '',
+      description: row[2] || '',
+      category: row[3] || '',
+      paidBy: row[4] || '',
+      splitAmong: row[5] ? row[5].toString().split(',').map(s => s.trim()) : [],
+      currency: row[6] || 'HKD',
+      amount: parseFloat(row[7]) || 0
+    });
+  }
+  
+  return expenses;
+}
+
+function addExpense(params) {
+  const sheet = getSheet();
+  const id = Utilities.getUuid();
+  
+  const newRow = [
+    id,
+    params.date,
+    params.description,
+    params.category,
+    params.paidBy,
+    params.splitAmong,
+    params.currency,
+    parseFloat(params.amount)
+  ];
+  
+  const nextRow = sheet.getLastRow() + 1;
+  sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
+  
+  return id;
+}
+
+function updateExpense(params) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString() === params.id.toString()) {
+      const newRow = [
+        params.date,
+        params.description,
+        params.category,
+        params.paidBy,
+        params.splitAmong,
+        params.currency,
+        parseFloat(params.amount)
+      ];
+      sheet.getRange(i + 1, 2, 1, newRow.length).setValues([newRow]);
+      return;
+    }
+  }
+  
+  throw new Error('Expense not found');
+}
+
+function deleteExpense(id) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toString() === id.toString()) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+  
+  throw new Error('Expense not found');
+}
